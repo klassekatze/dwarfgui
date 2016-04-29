@@ -1,0 +1,577 @@
+			
+
+
+<input type="text" value="" style="" id="demo_q" placeholder="Search" class="form-inline">
+<div class="row">
+	<div id="databox" class="col-sm-6">
+		changed <span id="inv_upd_time">time</span>
+		<br/>
+		<div id="jstree_inventory"></div>
+	</div>
+	<div id="groundbox" class="col-sm-6">
+		<br/>
+		<div id="jstree_ground"></div>
+	</div>
+	
+</div>
+
+<style>
+.jstree-icon
+{
+	font-size: 16px;
+	    color: #FFF;
+}
+</style>
+<script>
+$(document).ready(function (){
+
+
+$.contextMenu({
+	selector: 'li.jstree-node', 
+	callback: function(key, options) {
+		var m = "clicked: " + key;
+		window.console && console.log(m) || alert(m); 
+	},
+	items: {
+		"equip": {name: "Equip/Wear", icon: "custom rpg-Icon6_94", accesskey: "w", callback: EQUIP_cb},
+		"eat": {disabled: true, name: "Eat", icon: "custom ra ra-meat", accesskey: "e", callback: EAT_cb},
+		"drop": {disabled: true, name: "Drop", icon: "custom rpg-Icon1_29", accesskey: "d", callback: DROP_cb},
+	}
+});
+//$('ul.context-menu-root').detach().appendTo('body');
+//$('#jstree_inventory').contextMenu();
+//$('#jstree_inventory').contextMenu("hide");
+function EQUIP_cb(itemKey, opt)
+{
+	//alert("Clicked on " + itemKey + " on element " + opt.$trigger.id);
+	//console.log(opt.$trigger);
+	var invokedOn = $(opt.$trigger[0]);
+	var node_id = invokedOn.attr('id');
+	jqxhr = $.ajax(
+	{
+		type: 'POST',
+		url: '/equip',
+		data:
+		{
+			item_id: node_id
+		}
+	})
+	.done(function(data)
+	{
+		if(data['success'] == true)
+		{
+			//yeppers
+			updateInventory();
+		}
+		else
+		{ //jstree
+			updateInventory();
+			alert('boom:' + data['error'])
+		}
+	})
+	.fail(function()
+	{
+		//glyph.addClass('glyphicon-remove');
+		//WUT.
+		alert('fail');
+	}).always(function()
+	{
+		//glyph.removeClass('glyphicon-refresh fa-pulse');
+		jqxhr = null;
+	});           
+}
+function EAT_cb(itemKey, opt)
+{
+	alert("Clicked on " + itemKey + " on element " + opt.$trigger.id);
+	// Do not close the menu after clicking an item
+	//return false;             
+}
+function DROP_cb(itemKey, opt)
+{
+	alert("Clicked on " + itemKey + " on element " + opt.$trigger.id);
+	// Do not close the menu after clicking an item
+	//return false;             
+}
+
+	
+	
+//man, the derp shit we are driven to do
+//only tested retroactive integration for rpg-Icon* icons and ra icons. doesn't work on glyphicons.
+var injectedrules = []
+function injectpriorityrulebefore(font)
+{
+	if(injectedrules.indexOf(font) == -1)
+	{
+		//lower on page wins, so bottom of the list
+		document.styleSheets[document.styleSheets.length-1].addRule('.beforefontoverride'+font+':before','font-family: '+font);
+	}
+}
+setTimeout(function()
+{
+	//console.log($('.context-menu-icon-custom').size());
+	$('.context-menu-icon-custom').each( function( index, element )
+	{
+		var e = $(element);
+		var fontfam = e.css('font-family');
+		injectpriorityrulebefore(fontfam);
+		e.addClass('context-menu-icon beforefontoverride'+fontfam);
+		
+		//prevent inheritance of the third party icons fiddlies into the text label in the span.
+		e.css('font-family',e.parent().css('font-family'));
+		e.css('line-height',e.parent().css('line-height'));
+	});
+}, 100);
+	
+	
+
+// html demo
+//$('#html').jstree();
+var jstree;
+var to = false;
+var search_query = '';
+
+function queueUpdateSearch()
+{
+	if(to)
+	{
+		clearTimeout(to);
+	}
+	to = setTimeout(function()
+	{
+		search_query = $('#demo_q').val();
+		$('#jstree_inventory').jstree(true).search(search_query);
+		$('#jstree_ground').jstree(true).search(search_query);
+	}, 150);
+}
+$('#demo_q').keyup(function()
+{
+	queueUpdateSearch()
+});
+
+function updateInventory(force)
+{
+	if(force === undefined)force = false;
+	jqxhr = $.ajax(
+		{
+			type: 'POST',
+			url: '/inv',
+			data:
+			{
+				unit: '-1',
+			}
+		})
+		.done(function(data)
+		{
+			if(data['available'] == true)
+			{
+				if(data['changed'] == true || force == true)
+				{
+					//console.log('inv changed');
+					var skeleton_root = {
+						'text': 'Urist McUrist\'s Inventory',
+						'type': 'root',
+						'children': []
+					}
+
+					function buildinv(skeleton, data)
+					{
+						$.each(data, function(key, val)
+						{
+							//console.log(key + '=' + val);
+							var name = val.name;
+							if(name == null || name == '') name = 'unknown';
+							var type = 'file';
+							if(val.container || val.is_box || val.is_barrel) type = 'folder';
+							if(val.is_flask) type = 'flask';
+							if(val.is_food) type = 'food';
+							if(val.is_liquid) type = 'fluid';
+							var node = {
+								'text': val.name,
+								'type': type,
+								'id': val.id
+							}
+							if(type == 'file')
+							{
+								var guess = dorfsmarttyper(name);
+								if(guess != '')node.type = guess;
+							}
+							if(val.mode && val.mode > -1)
+							{
+								node['text'] = '<b>' + val.name + '</b>';
+							}
+							if(val.container && val.item && val.item.length > 0)
+							{
+								node.children = [];
+								buildinv(node.children, val.item)
+							}
+							skeleton.push(node);
+						});
+					}
+					buildinv(skeleton_root.children, data.item)
+					$('#jstree_inventory').jstree(true).settings.core.data = skeleton_root;
+					$('#jstree_inventory').jstree(true).refresh();
+					queueUpdateSearch();
+					
+					var t = $('#inv_upd_time');
+					var date = new Date();
+					//.timeago();
+					//t.attr('datetime',date.toISOString());
+					t.timeago("update", date);
+				}else
+				{
+					//console.log('inv unchanged');
+				}
+			}
+			else
+			{
+				alert('data not available. see console');
+				console.log(data)
+				//glyph.addClass('glyphicon-remove');
+			}
+		})
+		.fail(function()
+		{
+			//glyph.addClass('glyphicon-remove');
+			//WUT.
+			//alert('fail');
+		}).always(function()
+		{
+			//glyph.removeClass('glyphicon-refresh fa-pulse');
+			jqxhr = null;
+		});
+}
+var updateinterval = setInterval(updateInventory, 2000);
+updateInventory(true);
+
+
+$.jstree.defaults.search.show_only_matches = true;
+$.jstree.defaults.search.show_only_matches_children = true;
+$.jstree.defaults.core.worker = false;
+$.jstree.defaults.core.themes = {
+	'dir':false,
+	'icons':true,
+	'url':false,
+
+	'name': 'default-dark',
+	'dots': true,
+	'variant': 'small',
+	//"responsive" : true,
+	'stripes': true,
+};
+//console.log($.jstree.defaults.core.themes);
+
+var dorftypes = {
+//'root':'glyphicon glyphicon-leaf',
+'folder':'fa fa-archive',
+'file':'glyphicon glyphicon-file',
+
+'metal':'rpg-Icons8_89',
+'blade':'rpg-Icons8_79',
+'flask':'rpg-Icons8_66',//fa fa-beer
+'fluid':'rpg-Icons8_66',//fa fa-tint',
+'food':'ra ra-meat',//fa fa-cutlery',
+'hammer':'rpg-Icons8_49',
+'blade-artifact':'rpg-Icons8_40',
+'hood':'rpg-Icons8_32',
+'dagger':'rpg-Icons8_21',
+'shield':'rpg-Icons8_10',
+'mechanism':'rpg-Icon7_55',
+'poison':'rpg-Icon1_83',//rpg-Icon7_45',
+'breastplate':'rpg-Icon6_94',
+'arrow':'rpg-Icon6_76',
+'bolt':'rpg-Icon6_76',
+'thread':'rpg-Icon6_50',
+'vermin':'rpg-Icon6_44',
+'forgotten':'rpg-Icon6_24',
+'trap':'ra ra-bear-trap',//rpg-Icon5_98',
+'pick':'rpg-Icon5_76',
+'gem-low':'rpg-Icon4_43',
+'gem-med':'rpg-Icon4_32',
+'gem-high':'rpg-Icon3_60',
+'coffin':'rpg-Icon4_63',
+'tomb':'rpg-Icon4_63',
+//'slab':'',
+'meat':'rpg-Icon4_50',
+'beer':'rpg-Icon4_48',
+'ale':'rpg-Icon4_48',
+'boot':'rpg-Icon3_84',
+'rock':'rpg-Icon3_74',
+'skull':'rpg-Icon3_36',
+'chain':'rpg-Icon3_25',
+'skeleton':'rpg-Icon3_06',
+'corpse':'rpg-Icon3_06',
+'bone':'rpg-Icon2_50',
+'goblet':' rpg-Icon2_45',
+'glass':'rpg-Icon2_28',
+'snow':'rpg-Icon2_13',
+'ice':'ra ra-ice-cube',
+'instrument':'rpg-Icon2_03',
+'web':'rpg-Icon1_92',
+'anvil':'rpg-Icon1_53',
+'shoe':'rpg-Icon1_29',
+'target':'rpg-Icon1_07',
+//'lever':'ra ra-lever',
+'cabbage':'ra ra-clover',
+'egg':'ra ra-egg-pod',
+'carrot':'ra ra-carrot',
+'crossbow':'ra ra-crossbow',
+'halberd':'ra ra-halberd',
+'gun':'ra ra-revolver',
+'block':'ra ra-cubes',
+'unknown':'ra ra-help',
+'grate':'ra ra-metal-gate',
+'floodgate':'ra ra-metal-gate',
+'mug':'ra ra-coffee-mug',
+'':'',
+'':'',
+'':'',
+'':'',
+'':'',
+
+'':''
+}
+function dorfsmarttyper(item_name)
+{
+	var nt = '';
+	$.each(dorftypes, function(key, val)
+	{
+		if(item_name.toLowerCase().indexOf(key) != -1)
+		{
+			nt = key;
+			return false;//break;
+		}
+	});
+	return nt;
+}
+
+//jQuery("[class^=rpg]").addClass("fs1")
+
+var all_list = [];
+function dorffactory_item_dbl(types, label){dorffactory_item(types, label, label);}
+function dorffactory_item(types, type, label)
+{
+	if(dorftypes[label] && dorftypes[label].length > 0)label = dorftypes[label];
+	types[type] = {'icon': label,'valid_children': []};
+}
+function dorffactory_container_dbl(types, label){dorffactory_container(types, label, label);}
+function dorffactory_container(types, type, label)
+{
+	if(dorftypes[label] && dorftypes[label].length > 0)label = dorftypes[label];
+	types[type] = {'icon': label/*,'valid_children':-1*/ };
+}
+
+$.jstree.defaults.types = {
+	'root':
+	{
+		'icon': 'glyphicon glyphicon-leaf',
+		//'valid_children': -1//[-1]
+	},
+	'default':
+	{
+		//'valid_children' : -1
+	},
+};
+
+dorffactory_container_dbl($.jstree.defaults.types,'folder');
+dorffactory_container_dbl($.jstree.defaults.types,'flask');
+
+dorffactory_item_dbl($.jstree.defaults.types,'file');
+dorffactory_item_dbl($.jstree.defaults.types,'fluid');
+dorffactory_item_dbl($.jstree.defaults.types,'food');
+
+$.each(dorftypes, function(key, val)
+{
+	if($.jstree.defaults.types[key] === undefined)
+	{
+		dorffactory_item_dbl($.jstree.defaults.types,key);
+	}
+});
+
+
+/*
+'metal':'rpg-Icons8_89',
+'blade':'rpg-Icons8_79',
+'flask':'rpg-Icons8_66',//fa fa-beer
+'fluid':'rpg-Icons8_66',//fa fa-tint',
+'food':'fa fa-cutlery',
+'hammer':'rpg-Icons8_49',
+'blade-artifact':'rpg-Icons8_40',
+'hood':'rpg-Icons8_32',*/
+
+
+
+/*
+function rpg_icon_fix()
+{
+//data-icon="?"
+	$();
+}*/
+
+
+
+// inline data demo
+jstree = $('#jstree_inventory').jstree(
+{
+	'core':
+	{
+		'data':
+		{
+			"text": "Items on the ground",'type':'root',
+			"children": [
+			{
+				"text": "derpsnow",'type':'file'
+			},
+			{
+				"text": "your <strike>corpse</strike> <strike>magma</strike> face",'type':'file'
+			}]
+		},
+		'check_callback': function(operation, node, node_parent, node_position, more)
+		{
+			if(operation === "move_node")
+			{
+				if(node_parent == undefined || node_parent.original == undefined || node_parent.original.type == undefined) return false;
+				if(this.get_node(node).parent === this.get_node(node_parent).id)
+				{
+					//console.log(this.get_node(node).parent);
+					//console.log(node_parent.id);
+					//console.log('a=no');
+					return false;
+				}
+				if(more && more.dnd && more.is_multi)
+				{
+					//console.log('b=no');
+					return false;
+				}
+				//console.log(more);
+				if(!more.dnd && more.core)
+				{
+					//console.log("item=" + node.id);
+					//console.log('dest=' + node_parent.id);
+					jqxhr = $.ajax(
+						{
+							type: 'POST',
+							url: '/move',
+							data:
+							{
+								item_id: node.id,
+								dest_id: node_parent.id
+							}
+						})
+						.done(function(data)
+						{
+							if(data['success'] == true)
+							{
+								//yeppers
+								updateInventory();
+							}
+							else
+							{ //jstree
+								updateInventory();
+								alert('boom:' + data['error'])
+							}
+						})
+						.fail(function()
+						{
+							//glyph.addClass('glyphicon-remove');
+							//WUT.
+							alert('fail');
+						}).always(function()
+						{
+							//glyph.removeClass('glyphicon-refresh fa-pulse');
+							jqxhr = null;
+						});
+				}
+			}
+			else
+			{
+				//console.log(more);
+			}
+			return true;
+		}, //end check_callback
+	},
+	'plugins': [
+		'themes', /*"contextmenu",*/ 'dnd', 'search',
+		'state', 'types', "sort" /*'wholerow'*/
+	],
+	'sort': function (a, b) {
+            var nodeA = this.get_node(a);
+            var nodeB = this.get_node(b);
+            var lengthA = nodeA.children.length;
+            var lengthB = nodeB.children.length;
+			var wornA = this.get_text(a).toLowerCase().indexOf('(worn') != -1 || this.get_text(a).toLowerCase().indexOf('(held') != -1;
+			var wornB = this.get_text(b).toLowerCase().indexOf('(worn') != -1 || this.get_text(b).toLowerCase().indexOf('(held') != -1;
+			//if(wornA && !wornB)return 1;
+			//if(wornB && !wornA)return -1;
+			
+            if ((lengthA == 0 && lengthB == 0) || (lengthA > 0 && lengthB > 0))
+                return this.get_text(a).toLowerCase() > this.get_text(b).toLowerCase() ? 1 : -1;
+            else
+			{
+				//special logic - folders at bottom relative to files when all are worn.
+				var sort = lengthA > lengthB ? -1 : 1;
+				if(wornA && wornB)sort = -sort;
+                return sort;
+			}
+        }
+	
+});
+jstree = $('#jstree_ground').jstree(
+{
+	'core':
+	{
+		'data':
+		{
+			"text": "Items on the ground",'type':'root',
+			"children": [
+			{
+				"text": "derpsnow",'type':'file'
+			},
+			{
+				"text": "your <strike>corpse</strike> <strike>magma</strike> face",'type':'file'
+			}]
+		},
+		'check_callback': function(operation, node, node_parent, node_position, more)
+		{
+			return false;
+		}, //end check_callback
+	},
+	
+	'plugins': [
+		'themes', /*"contextmenu",*/ 'dnd', 'search',
+		'state', 'types', /*'wholerow'*/
+	]
+});
+
+updateInventory();
+
+$('#contextMenu').detach().appendTo('body');
+/*
+$('#jstree_inventory').contextMenu(
+{
+	menuSelector: '#contextMenu',
+	menuSelected: function(invokedOn, selectedMenu)
+	{
+		console.log('invoked:' + invokedOn.size())
+		if(!invokedOn.is('li')) invokedOn = invokedOn.parents('li');
+		console.log('invoked:' + invokedOn.size())
+		if(invokedOn.size() > 0)
+		{
+			var opt = selectedMenu.text();
+			if(opt == 'Equip')
+			{
+				
+			}
+		}
+	}
+});*/
+//document ready end
+});
+</script>
+
+
+
+
+
+
+
+

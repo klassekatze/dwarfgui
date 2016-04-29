@@ -1,0 +1,234 @@
+@charset "utf-8";
+
+
+#menubox
+{
+padding:0; 
+border: 2px solid #666;
+
+width:10em; 
+margin-left: auto;
+margin-right: auto;
+text-align:center;
+}
+
+#menut1
+{
+padding:5px;
+border: 0px;
+}
+#menut1 ul { 
+padding:0; 
+border: 0px;
+} 
+#menut1 li { 
+list-style-type:none; 
+border: 0px;
+}
+#menut1 a, #menu0 a:visited { 
+display:block; 
+border-bottom:1px solid #666; 
+font-family:arial, verdana, sans-serif; /* ADDED */ 
+text-decoration:none;
+}
+
+
+
+
+
+/*<![CDATA[*/
+ 
+/* page styling, unimportant for the example. only makes the page looks nicer */
+ 
+/*]]>*/
+
+
+.scrollist
+{
+	border:2px solid #666; 
+	width:225px;
+	background:#F0F0F0;
+}
+.scrollist #b {
+background:#E0E0E0;
+}
+
+.scrollist option.em {
+	color: #309;
+}
+
+.info{
+	display: inline;
+    position:relative; /*this is the key*/
+    z-index:24; background-color:#ccc;
+    color:#000;
+    text-decoration:none;
+	margin-left:5px; 
+}
+
+.info:hover
+{
+	z-index:25;
+	background-color:#ff0;
+	cursor: help;
+}
+
+.info span{display: none}
+
+.info:hover span{ /*the span will display just on :hover state*/
+    display:block;
+    position:absolute;
+    top:1em; left:1em; width:15em;
+    border:1px solid #0cf;
+    background-color:#cff; color:#000;
+    text-align: center}
+	
+.peoplesearch
+{
+	/*display: none;*/
+	border:2px solid #666;
+	width: 22em;
+	background:#F0F0F0;
+}
+
+
+.nopadright
+{
+	padding-right: 0px;
+}
+.minpadleft
+{
+	padding-left: 8px;
+}
+
+
+.table.nopad>thead>tr>th,
+.table.nopad>tbody>tr>th,
+.table.nopad>tfoot>tr>th,
+/*.table.nopad>thead>tr>td,*/
+.table.nopad>tbody>tr>td,
+.table.nopad>tfoot>tr>td
+{
+	
+	vertical-align: inherit;/*baseline;*/
+	white-space: nowrap
+}
+.table.nopad .tooltip
+{
+	white-space: normal
+}
+/*.table.nopad>thead>tr>th,*/
+.table.nopad>tbody>tr>th,
+.table.nopad>tfoot>tr>th,
+/*.table.nopad>thead>tr>td,*/
+.table.nopad>tbody>tr>td,
+.table.nopad>tfoot>tr>td
+{
+	padding-top: 0px;
+	padding-bottom: 0px;
+	vertical-align: inherit;/*baseline;*/
+	white-space: nowrap
+}
+.table.nopad>thead>tr>th
+{
+	padding-bottom: 2px;
+}
+.table-nonfluid {
+   width: auto;
+}
+
+a.ul{
+text-decoration: underline;
+}
+
+a.extlink{
+text-decoration: underline;
+
+color: #2E9AFE;
+}
+a.extlink:visited, a.read {
+color: #DA81F5;
+}
+a.highlight {
+background-color: #FFFF00;
+}
+
+.navbar-toggle .icon-bar {
+background-color: #fff;
+}
+.navbar-toggle {
+border-color: #fff;
+}
+table.labeled tr td:first-child{
+text-align: right;
+}
+
+table.valignedb {
+width:100%;
+background-color: transparent;
+}
+table.valignedb td {
+vertical-align:bottom;
+}
+td.valignedm {
+vertical-align:middle;
+}
+.dropdown-menu.compact a {
+	padding:0px;
+	padding: 0px 6px;
+}
+ul.dropdown-menu.compact {
+	/*margin:0px;*/
+	padding:3px 0;
+}
+ul.dropdown-menu.compact .divider {
+margin: 1px 0;
+/*margin: 4px 0;*/
+}
+
+@media (min-width: 768px) {
+    .form-inline .radio input[type="radio"], 
+    .form-inline .checkbox input[type="checkbox"] {
+        float: left;
+        margin-right: 5px;
+    }
+}
+
+.clickable
+{
+	pointer-events: auto;
+	display: block;
+	/*cursor: pointer;*/
+}
+
+.has-ajax .form-control-feedback
+{
+	color: #353A35;
+}
+
+.col-centered{
+    float: none;
+    margin: 0 auto;
+}
+.supercenterwrap{
+    width:100%;
+    text-align:center;
+}
+.supercenter{
+    display:inline-block;
+    *display:inline;/* IE*/
+    *zoom:1;/* IE*/
+    /*background:yellow;
+    overflow:hidden;*/
+    text-align:left;
+}
+
+
+
+
+
+
+
+
+
+

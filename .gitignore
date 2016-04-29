@@ -3,6 +3,11 @@ bin/
 bin-debug/
 bin-release/
 
+dwarfgui.exe
+dwarfGUI.watchr
+proto/*.proto
+#proto/*.pb.go
+
 # Other files and folders
 .settings/
 
